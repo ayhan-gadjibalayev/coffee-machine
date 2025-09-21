@@ -11,7 +11,7 @@ function App() {
             <span className="sec-text">sec</span>
             <button className="button">STOP</button>
           </div>
-          <div className="aaaa"></div>
+          <div className="pallet"></div>
         </div>
         <div className="black">
           <div className="white-line"></div>
@@ -33,7 +33,7 @@ function App() {
           <div className="white-line"></div>
         </div>
       </div>
-        <div className="xxx"></div>
+        <div className="The-brilliant-part"></div>
       <div className="footer-machine"></div>
       <div className="design-credit">DESIGN BY HAROZHANG</div>
     </div>
