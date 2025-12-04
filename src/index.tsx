@@ -16,3 +16,10 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+
+// 1) созать див (400px условно высота)
+// 2) анимировать див
+// 3) анимация по нажатию (див)
+// 4) по нажатию на старт определить массив по кол сек добавлять элементы
+// 5) анимировался массив дивов
