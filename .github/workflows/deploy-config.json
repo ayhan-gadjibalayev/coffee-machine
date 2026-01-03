@@ -1,0 +1,8 @@
+{
+  "appName": "Coffee Machine",
+  "port": 3001,
+  "type": "react-app",
+  "buildCommand": "npm run build",
+  "startCommand": "npm start",
+  "outputDir": "build"
+}

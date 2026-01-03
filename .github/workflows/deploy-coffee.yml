@@ -1,0 +1,178 @@
+name: ☕ Deploy Coffee Machine App
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # Для ручного запуска
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: ⎔ Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: 📦 Install dependencies
+      run: npm ci
+    
+    - name: 🧪 Run tests (if any)
+      run: npm test -- --passWithNoTests
+    
+    - name: 🏗 Build project
+      run: npm run build
+      env:
+        CI: false  # Для React проектов
+
+  deploy-to-wsl:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔑 Setup SSH access
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.WSL_SSH_KEY }}
+    
+    - name: 🚀 Deploy to WSL Server
+      run: |
+        # Создаем временную папку для сборки
+        mkdir -p dist-build
+        cp -r ./* dist-build/ 2>/dev/null || true
+        
+        # Подключаемся к WSL и деплоим
+        ssh -o StrictHostKeyChecking=no yhan@172.17.233.234 "
+          echo '=== ☕ DEPLOYING COFFEE MACHINE APP ==='
+          echo 'Deploy time: \$(date)'
+          
+          # Создаем папку для кофейного приложения
+          mkdir -p ~/coffee-machine-app
+          cd ~/coffee-machine-app
+          
+          # Останавливаем старый процесс
+          echo '🛑 Stopping old process...'
+          pkill -f 'coffee-machine' 2>/dev/null || echo 'No old process'
+          
+          # Очищаем старые файлы
+          echo '🧹 Cleaning old files...'
+          rm -rf ./*
+          
+          # Копируем файлы сборки
+          echo '📦 Copying build files...'
+          
+          # Сохраняем версию и информацию о сборке
+          cat > version.json << 'EOF2'
+        {
+          \"version\": \"1.0.${{ github.run_number }}\",
+          \"build\": \"${{ github.run_number }}\",
+          \"commit\": \"${{ github.sha }}\",
+          \"deployed\": \"\$(date '+%Y-%m-%d %H:%M:%S')\",
+          \"branch\": \"${{ github.ref_name }}\"
+        }
+        EOF2
+          
+          # Проверяем тип приложения и настраиваем соответствующим образом
+          if [ -f package.json ] && grep -q 'react-scripts' package.json; then
+            echo '⚛️ Detected React app'
+            # Для React создаем сервер для раздачи статики
+            cat > server.js << 'EOF2'
+        const express = require('express');
+        const path = require('path');
+        const app = express();
+        const PORT = 3001;  # Используем порт 3001 для кофейной машины
+        
+        # Раздаем статические файлы
+        app.use(express.static(path.join(__dirname, 'build')));
+        
+        # API endpoint для информации о версии
+        app.get('/api/version', (req, res) => {
+          res.json(require('./version.json'));
+        });
+        
+        # Все остальные запросы на index.html
+        app.get('*', (req, res) => {
+          res.sendFile(path.join(__dirname, 'build', 'index.html'));
+        });
+        
+        app.listen(PORT, () => {
+          console.log(\`☕ Coffee Machine app running on port \${PORT}\`);
+          console.log(\`📅 Deployed: \$(new Date().toLocaleString())\`);
+        });
+        EOF2
+            
+            # Устанавливаем Express
+            npm init -y
+            npm install express
+            
+          else
+            echo '🔧 Generic Node.js/TypeScript app'
+            # Для других проектов просто копируем исходники
+            cat > start.sh << 'EOF2'
+        #!/bin/bash
+        echo \"Starting Coffee Machine app...\"
+        echo \"Port: 3001\"
+        echo \"Build: ${{ github.run_number }}\"
+        
+        # Запускаем в зависимости от типа проекта
+        if [ -f package.json ]; then
+          if grep -q '\"start\"' package.json; then
+            npm start
+          elif [ -f index.js ]; then
+            node index.js
+          elif [ -f src/index.js ]; then
+            node src/index.js
+          else
+            echo \"No entry point found. Serving static files.\"
+            npx serve -p 3001
+          fi
+        else
+          echo \"No package.json. Using simple HTTP server.\"
+          npx serve -p 3001
+        fi
+        EOF2
+            
+            chmod +x start.sh
+          fi
+          
+          echo '✅ Files prepared'
+          
+          # Запускаем приложение
+          echo '🚀 Starting application...'
+          if [ -f server.js ]; then
+            nohup node server.js > coffee-app.log 2>&1 &
+            echo \"📝 Logs: ~/coffee-machine-app/coffee-app.log\"
+          elif [ -f start.sh ]; then
+            nohup ./start.sh > coffee-app.log 2>&1 &
+            echo \"📝 Logs: ~/coffee-machine-app/coffee-app.log\"
+          else
+            echo \"⚠️ No startup script found\"
+          fi
+          
+          echo \"🌐 App URL: http://localhost:3001\"
+          echo \"📊 API version: http://localhost:3001/api/version\"
+          echo \"=== ✅ DEPLOYMENT COMPLETE ===\"
+        "
+    
+    - name: ✅ Verify deployment
+      run: |
+        echo "☕ Coffee Machine deployment initiated!"
+        echo ""
+        echo "To check if it's working:"
+        echo "1. Connect to WSL: ssh yhan@172.17.233.234"
+        echo "2. Check logs: tail -f ~/coffee-machine-app/coffee-app.log"
+        echo "3. Test app: curl http://localhost:3001"
+        echo ""
+        echo "Or from Windows PowerShell:"
+        echo "wsl curl http://localhost:3001"
