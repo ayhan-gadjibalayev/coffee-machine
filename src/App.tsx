@@ -1,8 +1,25 @@
+
 import React, { useState, useEffect } from "react";
 import "./app.css";
 
-type IngredientName = "кофе" | "вода" | "сливки" | "сахар" | "молоко" | "пенка" | "шоколад";
-type CoffeeName = "Эспрессо" | "Американо" | "Раф" | "Торре" | "Капучино" | "Латте" | "Ристретто" | "Моккачино";
+type IngredientName =
+  | "кофе"
+  | "вода"
+  | "сливки"
+  | "сахар"
+  | "молоко"
+  | "пенка"
+  | "шоколад";
+
+type CoffeeName =
+  | "Эспрессо"
+  | "Американо"
+  | "Раф"
+  | "Торре"
+  | "Капучино"
+  | "Латте"
+  | "Ристретто"
+  | "Моккачино";
 
 interface Ingredient {
   name: IngredientName;
@@ -94,10 +111,10 @@ function App() {
 
   const updateCurrentIngredient = () => {
     if (!activeCoffee) return;
-    
+
     let timePassed = calculateBrewTime(activeCoffee) - brewTime;
     let currentTime = 0;
-    
+
     for (let ingredient of activeCoffee.ingredients) {
       currentTime += ingredient.time;
       if (timePassed <= currentTime) {
@@ -114,7 +131,10 @@ function App() {
   };
 
   const calculateBrewTime = (coffee: CoffeeRecipe): number => {
-    return coffee.ingredients.reduce((total: number, ingredient: Ingredient) => total + ingredient.time, 0);
+    return coffee.ingredients.reduce(
+      (total: number, ingredient: Ingredient) => total + ingredient.time,
+      0
+    );
   };
 
   const selectCoffee = (coffee: CoffeeRecipe) => {
@@ -145,15 +165,23 @@ function App() {
   };
 
   const getIngredientColor = (): string => {
-    switch(currentIngredient) {
-      case "кофе": return "#6F4E37";
-      case "вода": return "#87CEEB";
-      case "молоко": return "#FFFFFF";
-      case "сливки": return "#FFFDD0";
-      case "пенка": return "#F5F5DC";
-      case "шоколад": return "#D2691E";
-      case "сахар": return "#FFFFFF";
-      default: return "#FFFFFF";
+    switch (currentIngredient) {
+      case "кофе":
+        return "#6F4E37";
+      case "вода":
+        return "#87CEEB";
+      case "молоко":
+        return "#FFFFFF";
+      case "сливки":
+        return "#FFFDD0";
+      case "пенка":
+        return "#F5F5DC";
+      case "шоколад":
+        return "#D2691E";
+      case "сахар":
+        return "#FFFFFF";
+      default:
+        return "#FFFFFF";
     }
   };
 
@@ -174,7 +202,7 @@ function App() {
             </button>
           ))}
         </div>
-        
+
         <div className="block">
           <span className="mark-name">HAROZHANG</span>
           <div className="roll">
@@ -184,7 +212,11 @@ function App() {
                 STOP
               </button>
             ) : (
-              <button className="button" onClick={startTimer} disabled={brewTime === 0}>
+              <button
+                className="button"
+                onClick={startTimer}
+                disabled={brewTime === 0}
+              >
                 START
               </button>
             )}
@@ -192,11 +224,11 @@ function App() {
           <div className="pallet"></div>
         </div>
 
-        <div 
-          className={`ingredient-flow ${isPouring ? 'pouring' : ''} ${isTimerActive ? 'active' : ''} ${brewTime === 0 ? 'finish' : ''}`}
+        <div
+          className={`ingredient-flow ${isTimerActive ? "active" : ""} ${activeCoffee && brewTime === 0 ? "finish" : ""} ${isPouring ? "pouring" : ""}`}
           style={{ backgroundColor: getIngredientColor() }}
         ></div>
-        
+
         <div className="black">
           {Array.from({ length: 17 }, (_, i) => (
             <div key={i} className="white-line"></div>
